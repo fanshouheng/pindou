@@ -19,6 +19,8 @@ interface SidebarProps {
   onExport: () => void;
   t: any;
   theme: Theme;
+  replaceModeBeadId: string | null;
+  onReplaceBead: ((bead: Bead) => void) | null;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -36,7 +38,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   setShowGridLines,
   onExport,
   t,
-  theme
+  theme,
+  replaceModeBeadId,
+  onReplaceBead
 }) => {
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -93,7 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <p className={titleClass}>{t.import || "Project"}</p>
 
         <div className="mb-2">
-          <button className={`w-full h-9 ${font16Class} border ${buttonGray} flex items-center justify-center relative`}>
+          <button className={`w-full h-9 ${font16Class} border ${buttonGray} pixel-btn flex items-center justify-center relative`}>
             <span>{t.uploadImage}</span>
             <input
               type="file"
@@ -143,7 +147,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
         </div>
 
-        </div>
       </div>
 
       {/* SECTION 2: Tools - Smart Actions */}
@@ -154,7 +157,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex gap-1.5">
           {/* Smart Cutout Button - gray */}
           <button
-            className={`flex-1 h-9 ${font16Class} border ${buttonGray} flex items-center justify-center`}
+            className={`flex-1 h-9 ${font16Class} border ${buttonGray} pixel-btn flex items-center justify-center`}
             onClick={() => setToolMode(ToolMode.WAND)}
           >
             {t.smartCutout || '智能抠图'}
@@ -162,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Denoise Button - gray */}
           <button
-            className={`flex-1 h-9 ${font16Class} border ${buttonGray} flex items-center justify-center`}
+            className={`flex-1 h-9 ${font16Class} border ${buttonGray} pixel-btn flex items-center justify-center`}
             onClick={onDenoise}
           >
             {t.denoise}
@@ -215,6 +218,17 @@ const Sidebar: React.FC<SidebarProps> = ({
            </div>
         </div>
 
+        {/* Replace Mode Indicator */}
+        {replaceModeBeadId && (
+          <div className="mb-2 p-2 bg-green-100 border border-green-400 rounded-sm">
+             <p className={`${font16Class} text-green-800`}>
+               <i className="nes-icon is-small exchange mr-1"></i>
+               替换颜色 {replaceModeBeadId}
+             </p>
+             <p className={`${font16Class} text-green-600 mt-1 text-sm`}>请选择新颜色</p>
+          </div>
+        )}
+
         {/* Color Grid - flex layout with fixed 24px squares */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
             <div 
@@ -228,15 +242,23 @@ const Sidebar: React.FC<SidebarProps> = ({
             {filteredPalette.map(bead => (
                 <div
                   key={bead.id}
-                  onClick={() => setSelectedBead(bead)}
+                  onClick={() => {
+                    if (replaceModeBeadId && onReplaceBead) {
+                      onReplaceBead(bead);
+                    } else {
+                      setSelectedBead(bead);
+                    }
+                  }}
                   className={`w-6 h-6 flex-shrink-0 cursor-pointer transition-all relative ${
-                    selectedBead.id === bead.id 
-                      ? 'ring-2 ring-yellow-400 z-10 scale-105' 
+                    selectedBead.id === bead.id
+                      ? 'ring-2 ring-yellow-400 z-10 scale-105'
+                      : replaceModeBeadId
+                      ? 'ring-2 ring-green-400 z-10 scale-105 animate-pulse'
                       : 'hover:scale-105'
                   }`}
-                  style={{ 
+                  style={{
                     backgroundColor: bead.hex,
-                    boxShadow: 'none' // Remove NES.css default shadow
+                    boxShadow: 'none'
                   }}
                   title={`${bead.id} - ${t.beadNames[bead.name] || bead.name}`}
                 />
@@ -248,7 +270,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* SECTION 4: Export */}
       <div className={`${panelClass} p-2.5 flex-shrink-0 mt-auto`}>
         <p className={titleClass}>{t.export}</p>
-        <button className={`w-full h-9 ${font16Class} border ${buttonGray} flex items-center justify-center`} onClick={onExport}>
+        <button className={`w-full h-9 ${font16Class} border ${buttonGray} pixel-btn flex items-center justify-center`} onClick={onExport}>
           {t.downloadPng}
         </button>
       </div>
