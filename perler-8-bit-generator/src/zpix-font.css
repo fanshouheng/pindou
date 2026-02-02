@@ -1,0 +1,29 @@
+/**
+ * Zpix 像素字体 - 本地引用
+ * 数据来源: SolidZORO/zpix-pixel-font (GitHub)
+ * 特点: 专门针对 12px 像素屏优化，中文字库全
+ */
+
+/* 定义 Zpix 字体 */
+@font-face {
+  font-family: 'Zpix';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/zpix.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+4E00-9FFF, U+3400-4DBF, U+3000-303F, U+3040-309F, U+30A0-30FF, U+31C0-31EF, U+31F0-31FF, U+FF00-FFEF;
+}
+
+/* 全局像素字体设置 */
+.zpix-font {
+  font-family: 'Zpix', 'Microsoft YaHei', monospace !important;
+}
+
+/* 禁用字体平滑 - 保持 8-bit 锐利质感 */
+.no-smoothing, .zpix-text {
+  -webkit-font-smoothing: none !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  font-smooth: never !important;
+  text-rendering: optimizeSpeed;
+  image-rendering: pixelated;
+}

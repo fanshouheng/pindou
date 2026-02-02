@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Pixel art bead pattern -->
+  <rect x="2" y="2" width="12" height="12" fill="#E7002F" rx="1"/>
+  <rect x="18" y="2" width="12" height="12" fill="#FFFFFF" rx="1"/>
+  <rect x="2" y="18" width="12" height="12" fill="#01ACEB" rx="1"/>
+  <rect x="18" y="18" width="12" height="12" fill="#F4D738" rx="1"/>
+  <!-- Highlight effect -->
+  <rect x="4" y="4" width="4" height="4" fill="rgba(255,255,255,0.5)"/>
+  <rect x="20" y="4" width="4" height="4" fill="rgba(255,255,255,0.5)"/>
+  <rect x="4" y="20" width="4" height="4" fill="rgba(255,255,255,0.5)"/>
+  <rect x="20" y="20" width="4" height="4" fill="rgba(255,255,255,0.5)"/>
+</svg>

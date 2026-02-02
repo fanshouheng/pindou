@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Perler 8-Bit Generator</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- NES.css -->
+    <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet" />
+    <!-- Zpix Pixel Font (Local - SolidZORO/zpix-pixel-font) -->
+    <link href="/src/zpix-font.css" rel="stylesheet" />
+    
+    <style>
+      :root {
+        /* Zpix - 本地像素字体，专门针对 12px 优化 */
+        --font-pixel: 'Zpix', 'Microsoft YaHei', monospace;
+      }
+
+      html, body {
+        height: 100vh;
+        width: 100vw;
+        margin: 0;
+        overflow: hidden; /* Zero-Scroll Policy */
+        background-color: #212529; /* Prevent white flash */
+      }
+      
+      /* Global Font Override & Pixel Sharpness */
+      * {
+        font-family: var(--font-pixel) !important;
+        -webkit-font-smoothing: none !important;
+        -moz-osx-font-smoothing: grayscale !important;
+        font-smooth: never !important;
+        text-rendering: optimizeSpeed;
+      }
+
+      #root {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Override Tailwind's font-sans default where needed */
+      .font-pixel {
+        font-family: var(--font-pixel);
+      }
+      
+      /* NES.css overrides/fixes for Tailwind conflicts */
+      .nes-btn {
+        margin-bottom: 8px; /* Spacing fix */
+        image-rendering: pixelated;
+      }
+      
+      /* Custom scrollbar to match retro theme */
+      ::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.1); 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #D3D3D3; 
+        border: 2px solid #888;
+        box-shadow: inset -2px -2px 0px rgba(0,0,0,0.5), inset 2px 2px 0px rgba(255,255,255,0.9);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
