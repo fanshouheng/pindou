@@ -25,7 +25,7 @@
         overflow: hidden; /* Zero-Scroll Policy */
         background-color: #212529; /* Prevent white flash */
       }
-      
+
       /* Global Font Override & Pixel Sharpness */
       * {
         font-family: var(--font-pixel) !important;
@@ -46,23 +46,65 @@
       .font-pixel {
         font-family: var(--font-pixel);
       }
-      
+
       /* NES.css overrides/fixes for Tailwind conflicts */
       .nes-btn {
         margin-bottom: 8px; /* Spacing fix */
         image-rendering: pixelated;
+        outline: none;
       }
-      
+
+      /* 全局按钮像素化 - 禁用抗锯齿 */
+      button {
+        image-rendering: pixelated;
+        -webkit-image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
+        outline: none !important;
+      }
+
+      /* 移除按钮点击后的焦点框 */
+      button:focus {
+        outline: none !important;
+        box-shadow: none !important;
+      }
+
+      /* 像素按钮容器间距，确保阴影不被切割 */
+      .pixel-btn-container {
+        margin: 4px;
+      }
+
+      /* 自定义像素风格按钮 */
+      .pixel-btn {
+        image-rendering: pixelated;
+        -webkit-image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
+        outline: none !important;
+        box-shadow: none !important;
+      }
+
+      /* 确保边框完美对齐，无缝隙 */
+      .pixel-btn {
+        border-collapse: collapse;
+      }
+
+      /* 修复 sub-pixel 间隙 */
+      .pixel-btn-container > * {
+        display: inline-block;
+        vertical-align: top;
+      }
+
       /* Custom scrollbar to match retro theme */
       ::-webkit-scrollbar {
         width: 12px;
         height: 12px;
       }
       ::-webkit-scrollbar-track {
-        background: rgba(0,0,0,0.1); 
+        background: rgba(0,0,0,0.1);
       }
       ::-webkit-scrollbar-thumb {
-        background: #D3D3D3; 
+        background: #D3D3D3;
         border: 2px solid #888;
         box-shadow: inset -2px -2px 0px rgba(0,0,0,0.5), inset 2px 2px 0px rgba(255,255,255,0.9);
       }
