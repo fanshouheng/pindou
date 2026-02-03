@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import EditorCanvas from './components/EditorCanvas';
 import BomTable from './components/BomTable';
 import InventoryPanel from './components/InventoryPanel';
+import ExportTestPage from './pages/ExportTestPage';
 import { Bead, BeadGrid, ToolMode, MatchStrategy } from './types';
 import { BEAD_PALETTE } from './constants';
 import { loadImage, convertImageToGrid, cleanupGrid } from './services/imageProcessing';
@@ -46,6 +47,9 @@ const App: React.FC = () => {
   const [patternName, setPatternName] = useState('');
   const [isInventoryOpen, setIsInventoryOpen] = useState(false);
 
+  // Test Page State
+  const [showTestPage, setShowTestPage] = useState(false);
+
   // RAF Ref
   const rafRef = useRef<number | null>(null);
 
@@ -83,6 +87,48 @@ const App: React.FC = () => {
           const cleaned = cleanupGrid(grid);
           setGrid(cleaned);
       }
+  }, [grid]);
+
+  // Auto remove background - detects background color from corners and removes it
+  const handleAutoRemoveBackground = useCallback(() => {
+      if (grid.length === 0 || grid[0].length === 0) return;
+      
+      const height = grid.length;
+      const width = grid[0].length;
+      
+      // Get corner colors to detect background
+      const corners = [
+          grid[0][0],
+          grid[0][width - 1],
+          grid[height - 1][0],
+          grid[height - 1][width - 1]
+      ].filter(Boolean);
+      
+      if (corners.length === 0) return;
+      
+      // Find most common corner color (background)
+      const colorCounts: Record<string, { bead: Bead; count: number }> = {};
+      corners.forEach(bead => {
+          if (!bead) return;
+          if (!colorCounts[bead.id]) {
+              colorCounts[bead.id] = { bead, count: 0 };
+          }
+          colorCounts[bead.id].count++;
+      });
+      
+      const backgroundEntry = Object.entries(colorCounts)
+          .sort((a, b) => b[1].count - a[1].count)[0];
+      
+      if (!backgroundEntry) return;
+      
+      const backgroundId = backgroundEntry[0];
+      
+      // Remove all beads with background color
+      const newGrid = grid.map(row => 
+          row.map(cell => cell?.id === backgroundId ? null : cell)
+      );
+      
+      setGrid(newGrid);
   }, [grid]);
 
   // Drag & Drop Handlers
@@ -179,11 +225,12 @@ const App: React.FC = () => {
     // Use setTimeout to allow UI to update
     setTimeout(() => {
       const CELL_PX = 30;
+      const RULER_SIZE = 30; // 坐标标尺尺寸
       const MARGIN = 40;
-      const TITLE_HEIGHT = 60;
-      const LEGEND_BOX_WIDTH = 80;
-      const LEGEND_BOX_HEIGHT = 50;
-      const LEGEND_GAP = 10;
+      const TITLE_HEIGHT = 80; // 增加标题高度以容纳更多信息
+      const LEGEND_BOX_WIDTH = 120; // 增加宽度以容纳颜色名称
+      const LEGEND_BOX_HEIGHT = 60;
+      const LEGEND_GAP = 12;
 
       // Stats
       const counts: Record<string, { bead: Bead, count: number }> = {};
@@ -196,18 +243,19 @@ const App: React.FC = () => {
         });
       });
       const sortedBeads = Object.values(counts).sort((a, b) => b.count - a.count);
+      const totalBeads = sortedBeads.reduce((acc, item) => acc + item.count, 0);
 
       const gridWidthPx = grid[0].length * CELL_PX;
       const gridHeightPx = grid.length * CELL_PX;
 
-      const minCanvasWidth = 800;
-      const contentWidth = Math.max(gridWidthPx, minCanvasWidth);
+      const minCanvasWidth = 900;
+      const contentWidth = Math.max(gridWidthPx + RULER_SIZE, minCanvasWidth);
       const legendItemsPerRow = Math.floor(contentWidth / (LEGEND_BOX_WIDTH + LEGEND_GAP));
       const legendRows = Math.ceil(sortedBeads.length / legendItemsPerRow);
-      const legendHeightPx = legendRows * (LEGEND_BOX_HEIGHT + LEGEND_GAP) + 40;
+      const legendHeightPx = legendRows * (LEGEND_BOX_HEIGHT + LEGEND_GAP) + 60;
 
       const canvasWidth = contentWidth + (MARGIN * 2);
-      const canvasHeight = MARGIN + TITLE_HEIGHT + gridHeightPx + 40 + legendHeightPx + MARGIN;
+      const canvasHeight = MARGIN + TITLE_HEIGHT + gridHeightPx + RULER_SIZE + 60 + legendHeightPx + MARGIN;
 
       const canvas = document.createElement('canvas');
       canvas.width = canvasWidth;
@@ -223,17 +271,73 @@ const App: React.FC = () => {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Draw border frame
+      ctx.strokeStyle = '#333333';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(10, 10, canvasWidth - 20, canvasHeight - 20);
+
       // Draw title
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 30px sans-serif';
+      ctx.font = 'bold 32px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${t.appTitle}`, canvasWidth / 2, MARGIN + 20);
+      ctx.fillText(`${t.appTitle}`, canvasWidth / 2, MARGIN + 25);
 
-      // Draw grid
+      // Draw subtitle with dimensions and total beads
+      const today = new Date().toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US');
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = '#666666';
+      ctx.fillText(
+        `${t.dimensions}: ${grid[0].length}×${grid.length} ${t.beadCount} | ${t.totalBeads}: ${totalBeads} | ${today}`,
+        canvasWidth / 2,
+        MARGIN + 55
+      );
+
+      // Draw grid with rulers
       setGenerationStep('ruler');
-      const gridStartX = (canvasWidth - gridWidthPx) / 2;
-      const gridStartY = MARGIN + TITLE_HEIGHT;
+      const gridStartX = (canvasWidth - gridWidthPx - RULER_SIZE) / 2 + RULER_SIZE;
+      const gridStartY = MARGIN + TITLE_HEIGHT + RULER_SIZE;
+
+      // Draw ruler background
+      ctx.fillStyle = '#F5F5F5';
+      ctx.fillRect(gridStartX - RULER_SIZE, gridStartY, RULER_SIZE, gridHeightPx);
+      ctx.fillRect(gridStartX, gridStartY - RULER_SIZE, gridWidthPx, RULER_SIZE);
+
+      // Draw column ruler (top)
+      ctx.fillStyle = '#333333';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let x = 0; x < grid[0].length; x++) {
+        const px = gridStartX + x * CELL_PX;
+        // Draw ruler number for every 5th column
+        if ((x + 1) % 5 === 0 || x === 0) {
+          ctx.fillText(String(x + 1), px + CELL_PX / 2, gridStartY - RULER_SIZE / 2);
+        }
+        // Draw tick mark
+        ctx.strokeStyle = '#999999';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px + CELL_PX / 2, gridStartY - 5);
+        ctx.lineTo(px + CELL_PX / 2, gridStartY);
+        ctx.stroke();
+      }
+
+      // Draw row ruler (left)
+      for (let y = 0; y < grid.length; y++) {
+        const py = gridStartY + y * CELL_PX;
+        // Draw ruler number for every 5th row
+        if ((y + 1) % 5 === 0 || y === 0) {
+          ctx.fillText(String(y + 1), gridStartX - RULER_SIZE / 2, py + CELL_PX / 2);
+        }
+        // Draw tick mark
+        ctx.strokeStyle = '#999999';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(gridStartX - 5, py + CELL_PX / 2);
+        ctx.lineTo(gridStartX, py + CELL_PX / 2);
+        ctx.stroke();
+      }
 
       ctx.translate(gridStartX, gridStartY);
 
@@ -244,7 +348,7 @@ const App: React.FC = () => {
 
           // Draw transparent: only draw 1px grid line, no fill
           if (!bead) {
-            ctx.strokeStyle = '#CCCCCC';
+            ctx.strokeStyle = '#E0E0E0';
             ctx.lineWidth = 1;
             ctx.strokeRect(px, py, CELL_PX, CELL_PX);
           } else {
@@ -267,20 +371,60 @@ const App: React.FC = () => {
         });
       });
 
+      // Draw 10x10 grid lines (thick black borders)
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      const gridWidth = grid[0].length * CELL_PX;
+      const gridHeight = grid.length * CELL_PX;
+
+      // Draw vertical lines every 10 columns
+      for (let x = 0; x <= grid[0].length; x += 10) {
+        const px = x * CELL_PX;
+        ctx.beginPath();
+        ctx.moveTo(px, 0);
+        ctx.lineTo(px, gridHeight);
+        ctx.stroke();
+      }
+
+      // Draw horizontal lines every 10 rows
+      for (let y = 0; y <= grid.length; y += 10) {
+        const py = y * CELL_PX;
+        ctx.beginPath();
+        ctx.moveTo(0, py);
+        ctx.lineTo(gridWidth, py);
+        ctx.stroke();
+      }
+
       ctx.translate(-gridStartX, -gridStartY);
 
-      // Draw BOM
+      // Draw BOM section
       setGenerationStep('bom');
       const legendStartX = MARGIN;
-      const legendStartY = gridStartY + gridHeightPx + 40;
+      const legendStartY = gridStartY + gridHeightPx + 50;
 
+      // Draw BOM section title
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 20px sans-serif';
+      ctx.font = 'bold 18px sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
-      ctx.fillText(t.bom, legendStartX, legendStartY);
+      ctx.fillText(`${t.bom} (${sortedBeads.length})`, legendStartX, legendStartY);
 
-      const legendItemsStartY = legendStartY + 20;
+      // Draw BOM table header
+      const headerY = legendStartY + 25;
+      ctx.fillStyle = '#F0F0F0';
+      ctx.fillRect(legendStartX, headerY, LEGEND_BOX_WIDTH, 24);
+      ctx.strokeStyle = '#333333';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(legendStartX, headerY, LEGEND_BOX_WIDTH, 24);
+
+      ctx.fillStyle = '#333333';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(t.id, legendStartX + 40, headerY + 12);
+      ctx.fillText(t.count, legendStartX + 90, headerY + 12);
+
+      const legendItemsStartY = headerY + 30;
 
       sortedBeads.forEach((item, index) => {
           const col = index % legendItemsPerRow;
@@ -288,25 +432,35 @@ const App: React.FC = () => {
           const x = legendStartX + col * (LEGEND_BOX_WIDTH + LEGEND_GAP);
           const y = legendItemsStartY + row * (LEGEND_BOX_HEIGHT + LEGEND_GAP);
 
+          // Draw color box
           ctx.fillStyle = item.bead.hex;
-          ctx.fillRect(x, y, LEGEND_BOX_WIDTH, LEGEND_BOX_HEIGHT);
+          ctx.fillRect(x, y, 50, LEGEND_BOX_HEIGHT);
           ctx.strokeStyle = '#333333';
           ctx.lineWidth = 1;
-          ctx.strokeRect(x, y, LEGEND_BOX_WIDTH, LEGEND_BOX_HEIGHT);
+          ctx.strokeRect(x, y, 50, LEGEND_BOX_HEIGHT);
+
+          // Draw info box
+          ctx.fillStyle = '#FAFAFA';
+          ctx.fillRect(x + 50, y, LEGEND_BOX_WIDTH - 50, LEGEND_BOX_HEIGHT);
+          ctx.strokeRect(x + 50, y, LEGEND_BOX_WIDTH - 50, LEGEND_BOX_HEIGHT);
+
           const rgb = item.bead.rgb;
           const lum = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b);
-          const textColor = lum > 128 ? '#000000' : '#FFFFFF';
+          const boxTextColor = lum > 128 ? '#000000' : '#FFFFFF';
 
-          ctx.fillStyle = textColor;
+          // Draw bead ID in color box
+          ctx.fillStyle = boxTextColor;
+          ctx.font = 'bold 14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(item.bead.id, x + 25, y + LEGEND_BOX_HEIGHT/2);
+
+          // Draw count
+          ctx.fillStyle = '#000000';
           ctx.font = 'bold 16px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(item.bead.id, x + LEGEND_BOX_WIDTH/2, y + LEGEND_BOX_HEIGHT/2);
-
-          ctx.font = 'bold 10px sans-serif';
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'top';
-          ctx.fillText(String(item.count), x + LEGEND_BOX_WIDTH - 4, y + 3);
+          ctx.fillText(String(item.count), x + 85, y + LEGEND_BOX_HEIGHT/2);
       });
 
       // Complete
@@ -316,12 +470,12 @@ const App: React.FC = () => {
       setPreviewStats({
         width: grid[0].length,
         height: grid.length,
-        count: sortedBeads.reduce((acc, item) => acc + item.count, 0),
+        count: totalBeads,
         sortedBeads
       });
       setIsGenerating(false);
     }, 100);
-  }, [grid, t]);
+  }, [grid, t, lang]);
 
   // Handle Actual Download
   const handleDownload = useCallback(() => {
@@ -347,28 +501,60 @@ const App: React.FC = () => {
   const mainStageClass = `relative w-full h-full overflow-hidden transition-all duration-200 ${theme === 'dark' ? 'bg-[#333]' : 'bg-gray-300'}`;
   const canvasPatternColor = theme === 'dark' ? '#444' : '#e5e7eb';
 
+  // 显示测试页面
+  if (showTestPage) {
+    return <ExportTestPage lang={lang} onBack={() => setShowTestPage(false)} />;
+  }
+
   return (
     <div className={appClass}>
       {/* 1. Header */}
       <header className={headerClass}>
         <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="小霏狗" className="h-12 w-auto" />
+          <img src="/logo.png" alt="小霏狗" className="h-10 w-auto" />
           <h1 className="text-xl font-bold truncate">小霏狗拼豆</h1>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0">
+           {/* 测试页面按钮 */}
            <button
-             className={`h-7 px-2 ${theme === 'dark' ? 'bg-[#2a2a2a] border-[#3a3a3a] text-gray-200 hover:bg-[#3a3a3a]' : 'bg-gray-200 border-gray-400 text-gray-800 hover:bg-gray-300'} pixel-btn flex items-center rounded-sm`}
-             onClick={() => setIsInventoryOpen(true)}
-             title="豆子仓库"
+              className={`h-9 px-3 ${theme === 'dark' ? 'text-yellow-400 hover:text-yellow-300 hover:bg-gray-800' : 'text-yellow-600 hover:text-yellow-700 hover:bg-gray-100'} flex items-center transition-colors`}
+              onClick={() => setShowTestPage(true)}
+              title="测试导出样式"
+            >
+              <span className="text-sm font-medium">🧪 测试</span>
+            </button>
+
+           {/* 分隔 */}
+           <div className={`w-px h-5 mx-2 ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+
+           {/* 主要操作按钮 - 深色填充 */}
+           <button
+              className={`h-9 px-4 ${theme === 'dark' ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-800 text-white hover:bg-gray-700'} flex items-center transition-colors`}
+              onClick={() => setIsInventoryOpen(true)}
+              title="豆子仓库"
+            >
+              <span className="text-sm font-medium">仓库</span>
+            </button>
+
+           {/* 分隔 */}
+           <div className={`w-px h-5 mx-2 ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+
+           {/* 次要按钮 - 纯文字 */}
+           <button
+             className={`h-9 px-3 ${theme === 'dark' ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} flex items-center transition-colors`}
+             onClick={() => setLang(l => l === 'en' ? 'zh' : 'en')}
+             title={lang === 'en' ? 'Switch to Chinese' : 'Switch to English'}
            >
-             <i className="nes-icon is-small coin mr-1"></i>
-             仓库
+             <span className="text-sm font-medium">{lang === 'en' ? 'English' : '中文'}</span>
            </button>
-           <button className={`h-7 px-2 ${theme === 'dark' ? 'bg-[#2a2a2a] border-[#3a3a3a] text-gray-200 hover:bg-[#3a3a3a]' : 'bg-gray-200 border-gray-400 text-gray-800 hover:bg-gray-300'} pixel-btn flex items-center rounded-sm ${lang === 'en' ? '' : ''}`} onClick={() => setLang(l => l === 'en' ? 'zh' : 'en')}>
-             {lang === 'en' ? 'EN' : 'ZH'}
-           </button>
-           <button className={`h-7 px-2 ${theme === 'dark' ? 'bg-[#2a2a2a] border-[#3a3a3a] text-gray-200 hover:bg-[#3a3a3a]' : 'bg-gray-200 border-gray-400 text-gray-800 hover:bg-gray-300'} pixel-btn flex items-center rounded-sm ${theme === 'dark' ? '' : ''}`} onClick={() => setTheme(th => th === 'dark' ? 'light' : 'dark')}>
-             {theme === 'dark' ? '🌙' : '☀️'}
+
+           {/* 主题切换 - 纯文字 */}
+           <button
+             className={`h-9 px-3 ${theme === 'dark' ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} flex items-center transition-colors`}
+             onClick={() => setTheme(th => th === 'dark' ? 'light' : 'dark')}
+             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+           >
+             <span className="text-sm font-medium">{theme === 'dark' ? '深色' : '浅色'}</span>
            </button>
         </div>
       </header>
@@ -389,6 +575,7 @@ const App: React.FC = () => {
             matchStrategy={matchStrategy}
             setMatchStrategy={setMatchStrategy}
             onDenoise={handleDenoise}
+            onAutoRemoveBackground={handleAutoRemoveBackground}
             showGridLines={showGridLines}
             setShowGridLines={setShowGridLines}
             onExport={handleExport}
