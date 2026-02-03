@@ -82,20 +82,26 @@ const BomTable: React.FC<BomTableProps> = ({
 
       <div className="w-full flex-1 overflow-hidden">
         {/* Table Container */}
-        <table className={`w-full border-collapse ${tableBg}`} style={{ border: '2px solid currentColor' }}>
+        <table className={`w-full border-collapse ${tableBg}`} style={{ border: '2px solid currentColor', tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '50px' }} />
+            <col style={{ width: 'auto' }} />
+            <col style={{ width: '50px' }} />
+            <col style={{ width: '50px' }} />
+          </colgroup>
           {/* Header Row */}
           <thead>
             <tr className={borderColor} style={{ borderBottom: '1px solid currentColor' }}>
-              <th className={`px-3 py-2 text-sm font-bold text-left ${textColor}`} style={{ width: '35%' }}>
+              <th className={`px-2 py-2 text-sm font-bold text-center ${textColor}`} style={{ whiteSpace: 'nowrap' }}>
                 {t.id}
               </th>
-              <th className={`px-3 py-2 text-sm font-bold text-center ${textColor}`} style={{ width: '25%' }}>
+              <th className={`px-3 py-2 text-sm font-bold text-center ${textColor}`} style={{ whiteSpace: 'nowrap' }}>
                 {t.count}
               </th>
-              <th className={`px-2 py-2 text-sm font-bold text-center ${textColor}`} style={{ width: '20%' }}>
+              <th className={`px-2 py-2 text-sm font-bold text-center ${textColor}`} style={{ whiteSpace: 'nowrap' }}>
                 {t.replace}
               </th>
-              <th className={`px-2 py-2 text-sm font-bold text-center ${textColor}`} style={{ width: '20%' }}>
+              <th className={`px-2 py-2 text-sm font-bold text-center ${textColor}`} style={{ whiteSpace: 'nowrap' }}>
                 {t.delete}
               </th>
             </tr>
@@ -126,16 +132,16 @@ const BomTable: React.FC<BomTableProps> = ({
                         {/* Column 1: 颜色 Badge */}
                         <td className={`px-2 py-1.5 ${textColor}`}>
                           <div
-                            className="flex items-center gap-2 px-3 py-1 rounded-sm"
+                            className="flex items-center justify-center rounded-none"
                             style={{
                               backgroundColor: bead.hex,
                               color: beadTextColor,
                               border: isLight ? '1px solid #999' : '1px solid rgba(255,255,255,0.3)',
-                              width: 'fit-content',
-                              minWidth: '60px'
+                              width: '36px',
+                              height: '36px'
                             }}
                           >
-                            <span className="font-bold text-sm">{bead.id}</span>
+                            <span className="font-bold text-xs">{bead.id}</span>
                           </div>
                         </td>
 

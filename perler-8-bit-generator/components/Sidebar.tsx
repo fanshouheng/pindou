@@ -1,7 +1,67 @@
-import React, { ChangeEvent, useState, useMemo } from 'react';
+import React, { ChangeEvent, useState, useMemo, useEffect, useRef } from 'react';
 import { BEAD_PALETTE } from '../constants';
 import { Bead, ToolMode, MatchStrategy } from '../types';
 import { Theme } from '../locales';
+
+// 宽度输入组件 - 支持中间编辑状态
+interface WidthInputProps {
+  value: number;
+  onChange: (value: number) => void;
+  inputClass: string;
+}
+
+const WidthInput: React.FC<WidthInputProps> = ({ value, onChange, inputClass }) => {
+  const [inputValue, setInputValue] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // 当外部 value 改变时，更新输入框显示
+  useEffect(() => {
+    setInputValue(String(value));
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+
+    // 如果是有效数字，更新父组件
+    const num = parseInt(newValue, 10);
+    if (!isNaN(num) && num >= 10 && num <= 200) {
+      onChange(num);
+    }
+  };
+
+  const handleBlur = () => {
+    // 失去焦点时，规范化值
+    const num = parseInt(inputValue, 10);
+    if (isNaN(num) || num < 10) {
+      onChange(10);
+    } else if (num > 200) {
+      onChange(200);
+    } else {
+      onChange(num);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      inputRef.current?.blur();
+    }
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      type="number"
+      className={inputClass}
+      value={inputValue}
+      min={10}
+      max={200}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+    />
+  );
+};
 
 interface SidebarProps {
   onImageUpload: (file: File) => void;
@@ -14,6 +74,7 @@ interface SidebarProps {
   matchStrategy: MatchStrategy;
   setMatchStrategy: (s: MatchStrategy) => void;
   onDenoise: () => void;
+  onAutoRemoveBackground?: () => void;
   showGridLines: boolean;
   setShowGridLines: (show: boolean) => void;
   onExport: () => void;
@@ -34,6 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   matchStrategy,
   setMatchStrategy,
   onDenoise,
+  onAutoRemoveBackground,
   showGridLines,
   setShowGridLines,
   onExport,
@@ -109,11 +171,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="flex items-center gap-2">
             <label className={`${font16Class} flex-shrink-0`}>{t.width}</label>
-            <input
-              type="number"
-              className={inputClass}
+            <WidthInput
               value={width}
-              onChange={(e) => setWidth(Math.max(10, Math.min(200, parseInt(e.target.value) || 50)))}
+              onChange={setWidth}
+              inputClass={inputClass}
             />
           </div>
         </div>
@@ -158,7 +219,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           {/* Smart Cutout Button - gray */}
           <button
             className={`flex-1 h-9 ${font16Class} border ${buttonGray} pixel-btn flex items-center justify-center`}
-            onClick={() => setToolMode(ToolMode.WAND)}
+            onClick={() => {
+              if (onAutoRemoveBackground) {
+                onAutoRemoveBackground();
+              } else {
+                setToolMode(ToolMode.WAND);
+              }
+            }}
           >
             {t.smartCutout || '智能抠图'}
           </button>
