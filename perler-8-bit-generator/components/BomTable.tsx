@@ -74,13 +74,13 @@ const BomTable: React.FC<BomTableProps> = ({
   };
 
   return (
-    <div className="p-2 w-full flex flex-col h-full">
+    <div className="p-2 w-full flex flex-col h-full overflow-hidden">
       {/* Title */}
       <div className={`flex items-center justify-between mb-2 pb-1 border-b-2 ${outerBorderColor}`}>
         <span className={`font-bold text-lg ${textColor}`}>{t.bom}</span>
       </div>
 
-      <div className="w-full flex-1 overflow-hidden">
+      <div className="w-full flex-1 overflow-y-auto custom-scrollbar">
         {/* Table Container */}
         <table className={`w-full border-collapse ${tableBg}`} style={{ border: '2px solid currentColor', tableLayout: 'fixed' }}>
           <colgroup>
