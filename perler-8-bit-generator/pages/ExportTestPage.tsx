@@ -88,10 +88,11 @@ const ExportTestPage: React.FC<ExportTestPageProps> = ({ lang = 'zh', onBack }) 
     setTimeout(() => {
       const CELL_PX = 30;
       const RULER_SIZE = 30;
-      const MARGIN = 40;
-      const TITLE_HEIGHT = 80;
-      const LEGEND_BOX_WIDTH = 120;
-      const LEGEND_BOX_HEIGHT = 60;
+      const MARGIN = 20;
+      const TITLE_HEIGHT = 50;
+      const SQUARE_SIZE = 50;
+      const LEGEND_BOX_WIDTH = SQUARE_SIZE * 2;
+      const LEGEND_BOX_HEIGHT = SQUARE_SIZE;
       const LEGEND_GAP = 12;
 
       const counts: Record<string, { bead: Bead; count: number }> = {};
@@ -137,21 +138,16 @@ const ExportTestPage: React.FC<ExportTestPageProps> = ({ lang = 'zh', onBack }) 
       ctx.lineWidth = 3;
       ctx.strokeRect(10, 10, canvasWidth - 20, canvasHeight - 20);
 
-      // Draw title
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 32px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${t.appTitle}`, canvasWidth / 2, MARGIN + 25);
-
-      // Draw subtitle
+      // Draw header info (dimensions, beads count, date) - 左对齐
       const today = new Date().toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US');
-      ctx.font = '14px sans-serif';
-      ctx.fillStyle = '#666666';
+      ctx.fillStyle = '#333333';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
       ctx.fillText(
-        `${t.dimensions}: ${grid[0].length}×${grid.length} ${t.beadCount} | ${t.totalBeads}: ${totalBeads} | ${today}`,
-        canvasWidth / 2,
-        MARGIN + 55
+        `${t.dimensions}: ${grid[0].length}×${grid.length} ${t.beadCount}  |  ${t.totalBeads}: ${totalBeads}  |  ${today}`,
+        MARGIN,
+        20
       );
 
       // Draw grid with rulers
@@ -272,8 +268,8 @@ const ExportTestPage: React.FC<ExportTestPageProps> = ({ lang = 'zh', onBack }) 
       ctx.font = 'bold 11px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(t.id, legendStartX + 40, headerY + 12);
-      ctx.fillText(t.count, legendStartX + 90, headerY + 12);
+      ctx.fillText(t.id, legendStartX + SQUARE_SIZE/2, headerY + 12);
+      ctx.fillText(t.count, legendStartX + SQUARE_SIZE + SQUARE_SIZE/2, headerY + 12);
 
       const legendItemsStartY = headerY + 30;
 
@@ -283,10 +279,19 @@ const ExportTestPage: React.FC<ExportTestPageProps> = ({ lang = 'zh', onBack }) 
         const x = legendStartX + col * (LEGEND_BOX_WIDTH + LEGEND_GAP);
         const y = legendItemsStartY + row * (LEGEND_BOX_HEIGHT + LEGEND_GAP);
 
+        // Draw color box (left square)
         ctx.fillStyle = item.bead.hex;
-        ctx.fillRect(x, y, 50, LEGEND_BOX_HEIGHT);
+        ctx.fillRect(x, y, SQUARE_SIZE, SQUARE_SIZE);
         ctx.strokeStyle = '#333333';
         ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, SQUARE_SIZE, SQUARE_SIZE);
+
+        // Draw count box (right square)
+        ctx.fillStyle = '#FAFAFA';
+        ctx.fillRect(x + SQUARE_SIZE, y, SQUARE_SIZE, SQUARE_SIZE);
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + SQUARE_SIZE, y, SQUARE_SIZE, SQUARE_SIZE);
         ctx.strokeRect(x, y, 50, LEGEND_BOX_HEIGHT);
 
         ctx.fillStyle = '#FAFAFA';
@@ -297,18 +302,27 @@ const ExportTestPage: React.FC<ExportTestPageProps> = ({ lang = 'zh', onBack }) 
         const lum = 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
         const boxTextColor = lum > 128 ? '#000000' : '#FFFFFF';
 
+        // Draw bead ID in left color box
         ctx.fillStyle = boxTextColor;
         ctx.font = 'bold 14px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(item.bead.id, x + 25, y + LEGEND_BOX_HEIGHT / 2);
+        ctx.fillText(item.bead.id, x + SQUARE_SIZE/2, y + SQUARE_SIZE/2);
 
+        // Draw count in right box
         ctx.fillStyle = '#000000';
         ctx.font = 'bold 16px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(String(item.count), x + 85, y + LEGEND_BOX_HEIGHT / 2);
+        ctx.fillText(String(item.count), x + SQUARE_SIZE + SQUARE_SIZE/2, y + SQUARE_SIZE/2);
       });
+
+      // Draw brand name at bottom right
+      ctx.fillStyle = '#999999';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('小霏狗拼豆', canvasWidth - MARGIN, canvasHeight - MARGIN);
 
       setGenerationStep('complete');
       const dataUrl = canvas.toDataURL('image/png');
