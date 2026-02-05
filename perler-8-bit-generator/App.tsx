@@ -185,13 +185,14 @@ const App: React.FC = () => {
     // Use setTimeout to allow UI to update
     setTimeout(() => {
       const CELL_PX = 30;
-      const MARGIN = 40;
-      const TITLE_HEIGHT = 60;
-      const LEGEND_BOX_WIDTH = 80;
-      const LEGEND_BOX_HEIGHT = 50;
-      const LEGEND_GAP = 10;
+      const RULER_SIZE = 30;
+      const MARGIN = 20;
+      const TITLE_HEIGHT = 50;
+      const SQUARE_SIZE = 50;
+      const LEGEND_BOX_WIDTH = SQUARE_SIZE * 2;
+      const LEGEND_BOX_HEIGHT = SQUARE_SIZE;
+      const LEGEND_GAP = 12;
 
-      // Stats
       const counts: Record<string, { bead: Bead, count: number }> = {};
       grid.forEach(row => {
         row.forEach(cell => {
@@ -202,6 +203,7 @@ const App: React.FC = () => {
         });
       });
       const sortedBeads = Object.values(counts).sort((a, b) => b.count - a.count);
+      const totalBeads = sortedBeads.reduce((acc, item) => acc + item.count, 0);
 
       const gridWidthPx = grid[0].length * CELL_PX;
       const gridHeightPx = grid.length * CELL_PX;
@@ -229,12 +231,22 @@ const App: React.FC = () => {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw title
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 30px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${t.appTitle}`, canvasWidth / 2, MARGIN + 20);
+      // Draw border frame
+      ctx.strokeStyle = '#333333';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(10, 10, canvasWidth - 20, canvasHeight - 20);
+
+      // Draw header info (dimensions, beads count, date) - 左对齐
+      const today = new Date().toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US');
+      ctx.fillStyle = '#333333';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(
+        `${t.dimensions}: ${grid[0].length}×${grid.length} ${t.beadCount}  |  ${t.totalBeads}: ${totalBeads}  |  ${today}`,
+        MARGIN,
+        20
+      );
 
       // Draw grid
       setGenerationStep('ruler');
@@ -275,18 +287,12 @@ const App: React.FC = () => {
 
       ctx.translate(-gridStartX, -gridStartY);
 
-      // Draw BOM
+      // Draw BOM section
       setGenerationStep('bom');
       const legendStartX = MARGIN;
       const legendStartY = gridStartY + gridHeightPx + 40;
 
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillText(t.bom, legendStartX, legendStartY);
-
-      const legendItemsStartY = legendStartY + 20;
+      const legendItemsStartY = legendStartY;
 
       sortedBeads.forEach((item, index) => {
           const col = index % legendItemsPerRow;
@@ -294,26 +300,45 @@ const App: React.FC = () => {
           const x = legendStartX + col * (LEGEND_BOX_WIDTH + LEGEND_GAP);
           const y = legendItemsStartY + row * (LEGEND_BOX_HEIGHT + LEGEND_GAP);
 
+          // Draw color box (left square)
           ctx.fillStyle = item.bead.hex;
-          ctx.fillRect(x, y, LEGEND_BOX_WIDTH, LEGEND_BOX_HEIGHT);
+          ctx.fillRect(x, y, SQUARE_SIZE, SQUARE_SIZE);
           ctx.strokeStyle = '#333333';
           ctx.lineWidth = 1;
-          ctx.strokeRect(x, y, LEGEND_BOX_WIDTH, LEGEND_BOX_HEIGHT);
+          ctx.strokeRect(x, y, SQUARE_SIZE, SQUARE_SIZE);
+
+          // Draw count box (right square)
+          ctx.fillStyle = '#FAFAFA';
+          ctx.fillRect(x + SQUARE_SIZE, y, SQUARE_SIZE, SQUARE_SIZE);
+          ctx.strokeStyle = '#333333';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x + SQUARE_SIZE, y, SQUARE_SIZE, SQUARE_SIZE);
+
           const rgb = item.bead.rgb;
           const lum = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b);
-          const textColor = lum > 128 ? '#000000' : '#FFFFFF';
+          const boxTextColor = lum > 128 ? '#000000' : '#FFFFFF';
 
-          ctx.fillStyle = textColor;
+          // Draw bead ID in left color box
+          ctx.fillStyle = boxTextColor;
+          ctx.font = 'bold 14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(item.bead.id, x + SQUARE_SIZE/2, y + SQUARE_SIZE/2);
+
+          // Draw count in right box
+          ctx.fillStyle = '#000000';
           ctx.font = 'bold 16px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(item.bead.id, x + LEGEND_BOX_WIDTH/2, y + LEGEND_BOX_HEIGHT/2);
-
-          ctx.font = 'bold 10px sans-serif';
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'top';
-          ctx.fillText(String(item.count), x + LEGEND_BOX_WIDTH - 4, y + 3);
+          ctx.fillText(String(item.count), x + SQUARE_SIZE + SQUARE_SIZE/2, y + SQUARE_SIZE/2);
       });
+
+      // Draw brand name at bottom right
+      ctx.fillStyle = '#999999';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('小霏狗拼豆', canvasWidth - MARGIN, canvasHeight - MARGIN);
 
       // Complete
       setGenerationStep('complete');
