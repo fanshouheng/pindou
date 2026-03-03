@@ -109,7 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               type="number"
               className={inputClass}
               value={width}
-              onChange={(e) => setWidth(Math.max(10, Math.min(200, parseInt(e.target.value) || 50)))}
+              onChange={(e) => setWidth(Math.max(1, Math.min(500, parseInt(e.target.value) || 50)))}
             />
           </div>
         </div>
