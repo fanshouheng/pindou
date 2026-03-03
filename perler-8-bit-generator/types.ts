@@ -32,3 +32,18 @@ export interface ExportOptions {
   style: 'pixel' | 'realistic';
   scale: number;
 }
+
+// 1:1 Pixel Mapping Mode Options
+export interface PixelModeOptions {
+  enabled: boolean;       // 是否启用像素原图模式
+  lockWidth: boolean;     // 是否锁定宽度为原图的整数倍
+  scaleMultiplier: number; // 整数倍 (1, 2, 3, 4...)
+}
+
+// 颜色限制模式
+export type ColorLimitMode = 'none' | 'basic' | 'warm' | 'cool' | 'earth' | 'pastel' | 'vintage' | 'custom';
+
+export interface ColorLimit {
+  mode: ColorLimitMode;
+  beadIds: string[];  // 允许使用的颜色 ID 列表
+}
