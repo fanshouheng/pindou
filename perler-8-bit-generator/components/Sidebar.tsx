@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useState, useMemo } from 'react';
 import { BEAD_PALETTE } from '../constants';
-import { Bead, ToolMode, MatchStrategy } from '../types';
+import { Bead, ToolMode } from '../types';
 import { Theme } from '../locales';
 
 interface SidebarProps {
@@ -11,10 +11,7 @@ interface SidebarProps {
   setSelectedBead: (bead: Bead) => void;
   toolMode: ToolMode;
   setToolMode: (mode: ToolMode) => void;
-  matchStrategy: MatchStrategy;
-  setMatchStrategy: (s: MatchStrategy) => void;
   onDenoise: () => void;
-  onMirror: () => void;
   showGridLines: boolean;
   setShowGridLines: (show: boolean) => void;
   onExport: () => void;
@@ -32,10 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   setSelectedBead,
   toolMode,
   setToolMode,
-  matchStrategy,
-  setMatchStrategy,
   onDenoise,
-  onMirror,
   showGridLines,
   setShowGridLines,
   onExport,
@@ -73,8 +67,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const checkboxClass = `w-4 h-4 border ${borderColor} ${theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-white'} cursor-pointer rounded-sm`;
   const radioClass = `w-4 h-4 border ${borderColor} ${theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-white'} cursor-pointer rounded-sm`;
 
-  // Title style: 18px (text-lg) - compressed
-  const titleClass = `text-lg font-bold border-b ${dividerColor} pb-0.5 mb-1`;
+  // Title style: 18px (text-lg)
+  const titleClass = `text-lg font-bold border-b ${dividerColor} pb-1 mb-2`;
 
   // Palette category filter state
   const [paletteFilter, setPaletteFilter] = useState<string>('ALL');
@@ -92,25 +86,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [paletteFilter]);
 
   return (
-    <div 
-      className={`w-full h-full flex flex-col p-2 gap-1.5 overflow-y-auto custom-scrollbar ${sidebarBg} ${textColor}`}
-      style={{ 
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none'
-      }}
-    >
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
+    <div className={`w-full h-full flex flex-col p-2 gap-1.5 overflow-hidden ${sidebarBg} ${textColor}`}>
 
       {/* SECTION 1: Project & Adjustments */}
-      <div className={`${panelClass} p-1.5 flex-shrink-0`}>
+      <div className={`${panelClass} p-2.5 flex-shrink-0`}>
         <p className={titleClass}>{t.import || "Project"}</p>
 
-        <div className="mb-1">
-          <button className={`w-full h-8 ${font16Class} border ${buttonGray} pixel-btn flex items-center justify-center relative`}>
+        <div className="mb-2">
+          <button className={`w-full h-9 ${font16Class} border ${buttonGray} pixel-btn flex items-center justify-center relative`}>
             <span>{t.uploadImage}</span>
             <input
               type="file"
@@ -120,7 +103,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             />
           </button>
 
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2">
             <label className={`${font16Class} flex-shrink-0`}>{t.width}</label>
             <input
               type="number"
@@ -131,46 +114,17 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        <div className={`border-t ${dividerColor} my-0.5`}></div>
-
-        {/* Algorithm Selection */}
-        <div className="mb-0.5">
-            <label className={`${font16Class} block mb-0.5`}>{t.algorithm}</label>
-            <div className="flex flex-col gap-0.5">
-                <label className={`flex items-center ${font16Class} cursor-pointer`}>
-                    <input
-                        type="radio"
-                        className={radioClass}
-                        style={{ marginRight: '6px' }}
-                        checked={matchStrategy === 'perceptual'}
-                        onChange={() => setMatchStrategy('perceptual')}
-                    />
-                    <span>{t.modePerceptual}</span>
-                </label>
-                <label className={`flex items-center ${font16Class} cursor-pointer`}>
-                    <input
-                        type="radio"
-                        className={radioClass}
-                        style={{ marginRight: '6px' }}
-                        checked={matchStrategy === 'contrast'}
-                        onChange={() => setMatchStrategy('contrast')}
-                    />
-                    <span>{t.modeContrast}</span>
-                </label>
-            </div>
-        </div>
-
       </div>
 
       {/* SECTION 2: Tools - Smart Actions */}
-      <div className={`${panelClass} p-1.5 flex-shrink-0`}>
+      <div className={`${panelClass} p-2.5 flex-shrink-0`}>
         <p className={titleClass}>{t.tools}</p>
 
-        {/* Three side-by-side gray buttons */}
-        <div className="flex gap-1">
+        {/* Two side-by-side gray buttons */}
+        <div className="flex gap-1.5">
           {/* Smart Cutout Button - gray */}
           <button
-            className={`flex-1 h-7 px-1 py-0.5 text-sm border ${buttonGray} pixel-btn flex items-center justify-center whitespace-nowrap overflow-hidden`}
+            className={`flex-1 h-9 ${font16Class} border ${buttonGray} pixel-btn flex items-center justify-center`}
             onClick={() => setToolMode(ToolMode.WAND)}
           >
             {t.smartCutout || '智能抠图'}
@@ -178,23 +132,15 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Denoise Button - gray */}
           <button
-            className={`flex-1 h-7 px-1 py-0.5 text-sm border ${buttonGray} pixel-btn flex items-center justify-center whitespace-nowrap overflow-hidden`}
+            className={`flex-1 h-9 ${font16Class} border ${buttonGray} pixel-btn flex items-center justify-center`}
             onClick={onDenoise}
           >
             {t.denoise}
           </button>
-
-          {/* Mirror Button - gray */}
-          <button
-            className={`flex-1 h-7 px-1 py-0.5 text-sm border ${buttonGray} pixel-btn flex items-center justify-center whitespace-nowrap overflow-hidden`}
-            onClick={onMirror}
-          >
-            {t.mirror}
-          </button>
         </div>
 
         {/* Grid Toggle */}
-        <div className="flex items-center justify-between mt-0.5">
+        <div className="flex items-center justify-between mt-1.5">
           <label className={`flex items-center ${font16Class} cursor-pointer`}>
             <input
               type="checkbox"
@@ -209,14 +155,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* SECTION 3: Palette with Category Filter */}
-      <div className={`${panelClass} p-1.5 flex-1 flex flex-col min-h-0`}>
+      <div className={`${panelClass} p-2.5 flex-1 flex flex-col min-h-0`}>
         {/* Title with Category Filter */}
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between mb-2">
           <p className={titleClass}>{t.palette}</p>
           <select
             value={paletteFilter}
             onChange={(e) => setPaletteFilter(e.target.value)}
-            className={`h-6 px-1 ${font16Class} border ${borderColor} ${theme === 'dark' ? 'bg-[#2a2a2a] text-gray-200' : 'bg-white text-gray-800'} outline-none cursor-pointer rounded-sm`}
+            className={`h-7 px-2 ${font16Class} border ${borderColor} ${theme === 'dark' ? 'bg-[#2a2a2a] text-gray-200' : 'bg-white text-gray-800'} outline-none cursor-pointer rounded-sm`}
             style={{ minWidth: '60px' }}
           >
             {categoryOptions.map(option => (
@@ -230,7 +176,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Selected Color Preview */}
         <div className={`mb-1 flex items-center gap-2 p-1 border ${borderColor} ${theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-gray-50'} rounded-sm`}>
            <div
-             className="w-5 h-5 border border-[#555] flex-shrink-0 rounded-sm"
+             className="w-6 h-6 border border-[#555] flex-shrink-0 rounded-sm"
              style={{ backgroundColor: selectedBead.hex }}
            ></div>
            <div className={`${font16Class} leading-tight truncate flex-1`}>
@@ -241,29 +187,22 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Replace Mode Indicator */}
         {replaceModeBeadId && (
-          <div className="mb-1 p-1.5 bg-green-100 border border-green-400 rounded-sm">
+          <div className="mb-2 p-2 bg-green-100 border border-green-400 rounded-sm">
              <p className={`${font16Class} text-green-800`}>
                <i className="nes-icon is-small exchange mr-1"></i>
                替换颜色 {replaceModeBeadId}
              </p>
-             <p className={`${font16Class} text-green-600 mt-0.5 text-sm`}>请选择新颜色</p>
+             <p className={`${font16Class} text-green-600 mt-1 text-sm`}>请选择新颜色</p>
           </div>
         )}
 
-        {/* Color Grid - flex layout with fixed 24px squares - scrollable */}
-        <div 
-          className="flex-1 overflow-y-auto custom-scrollbar"
-          style={{ 
-            maxHeight: '400px',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none'
-          }}
-        >
+        {/* Color Grid - flex layout with fixed 24px squares */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
             <div 
               className="flex flex-wrap content-start"
               style={{ 
                 gap: '2px',
-                width: 'calc(100% + 4px)',
+                width: 'calc(100% + 4px)', // Compensate for negative margin if any
                 margin: '-2px'
               }}
             >
@@ -296,9 +235,9 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* SECTION 4: Export */}
-      <div className={`${panelClass} p-1.5 flex-shrink-0 mt-auto`}>
+      <div className={`${panelClass} p-2.5 flex-shrink-0 mt-auto`}>
         <p className={titleClass}>{t.export}</p>
-        <button className={`w-full h-8 ${font16Class} border ${buttonGray} pixel-btn flex items-center justify-center`} onClick={onExport}>
+        <button className={`w-full h-9 ${font16Class} border ${buttonGray} pixel-btn flex items-center justify-center`} onClick={onExport}>
           {t.downloadPng}
         </button>
       </div>

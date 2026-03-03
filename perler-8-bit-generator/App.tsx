@@ -3,7 +3,7 @@ import Sidebar from './components/Sidebar';
 import EditorCanvas from './components/EditorCanvas';
 import BomTable from './components/BomTable';
 import InventoryPanel from './components/InventoryPanel';
-import { Bead, BeadGrid, ToolMode, MatchStrategy } from './types';
+import { Bead, BeadGrid, ToolMode } from './types';
 import { BEAD_PALETTE } from './constants';
 import { loadImage, convertImageToGrid, cleanupGrid } from './services/imageProcessing';
 import { translations, Language, Theme } from './locales';
@@ -19,7 +19,6 @@ const App: React.FC = () => {
   const [targetWidth, setTargetWidth] = useState(50);
   const [brightness, setBrightness] = useState(0);
   const [contrast, setContrast] = useState(0);
-  const [matchStrategy, setMatchStrategy] = useState<MatchStrategy>('perceptual');
   
   // Tools
   const [selectedBead, setSelectedBead] = useState<Bead>(BEAD_PALETTE[0]);
@@ -73,7 +72,7 @@ const App: React.FC = () => {
     setUploadedFile(file);
     loadImage(file).then(img => {
       setSourceImage(img);
-      const newGrid = convertImageToGrid(img, targetWidth, brightness, contrast, matchStrategy);
+      const newGrid = convertImageToGrid(img, targetWidth, brightness, contrast, 'contrast');
       setGrid(newGrid);
     }).catch(console.error);
   };
@@ -83,12 +82,6 @@ const App: React.FC = () => {
           const cleaned = cleanupGrid(grid);
           setGrid(cleaned);
       }
-  }, [grid]);
-
-  const handleMirror = useCallback(() => {
-      if (grid.length === 0) return;
-      const mirroredGrid = grid.map(row => [...row].reverse());
-      setGrid(mirroredGrid);
   }, [grid]);
 
   // Drag & Drop Handlers
@@ -124,7 +117,7 @@ const App: React.FC = () => {
 
     rafRef.current = requestAnimationFrame(() => {
       try {
-        const newGrid = convertImageToGrid(sourceImage, targetWidth, brightness, contrast, matchStrategy);
+        const newGrid = convertImageToGrid(sourceImage, targetWidth, brightness, contrast, 'contrast');
         setGrid(newGrid);
       } catch (e) {
         console.error("Processing error:", e);
@@ -134,7 +127,7 @@ const App: React.FC = () => {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [sourceImage, targetWidth, brightness, contrast, matchStrategy]);
+  }, [sourceImage, targetWidth, brightness, contrast]);
 
   // BOM Edit Functions
   const handleDeleteBead = useCallback((beadId: string) => {
@@ -185,14 +178,13 @@ const App: React.FC = () => {
     // Use setTimeout to allow UI to update
     setTimeout(() => {
       const CELL_PX = 30;
-      const RULER_SIZE = 30;
-      const MARGIN = 20;
-      const TITLE_HEIGHT = 50;
-      const SQUARE_SIZE = 50;
-      const LEGEND_BOX_WIDTH = SQUARE_SIZE * 2;
-      const LEGEND_BOX_HEIGHT = SQUARE_SIZE;
-      const LEGEND_GAP = 12;
+      const MARGIN = 40;
+      const TITLE_HEIGHT = 60;
+      const LEGEND_BOX_WIDTH = 80;
+      const LEGEND_BOX_HEIGHT = 50;
+      const LEGEND_GAP = 10;
 
+      // Stats
       const counts: Record<string, { bead: Bead, count: number }> = {};
       grid.forEach(row => {
         row.forEach(cell => {
@@ -203,7 +195,6 @@ const App: React.FC = () => {
         });
       });
       const sortedBeads = Object.values(counts).sort((a, b) => b.count - a.count);
-      const totalBeads = sortedBeads.reduce((acc, item) => acc + item.count, 0);
 
       const gridWidthPx = grid[0].length * CELL_PX;
       const gridHeightPx = grid.length * CELL_PX;
@@ -231,22 +222,12 @@ const App: React.FC = () => {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw border frame
-      ctx.strokeStyle = '#333333';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(10, 10, canvasWidth - 20, canvasHeight - 20);
-
-      // Draw header info (dimensions, beads count, date) - 左对齐
-      const today = new Date().toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US');
-      ctx.fillStyle = '#333333';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText(
-        `${t.dimensions}: ${grid[0].length}×${grid.length} ${t.beadCount}  |  ${t.totalBeads}: ${totalBeads}  |  ${today}`,
-        MARGIN,
-        20
-      );
+      // Draw title
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${t.appTitle}`, canvasWidth / 2, MARGIN + 20);
 
       // Draw grid
       setGenerationStep('ruler');
@@ -287,12 +268,18 @@ const App: React.FC = () => {
 
       ctx.translate(-gridStartX, -gridStartY);
 
-      // Draw BOM section
+      // Draw BOM
       setGenerationStep('bom');
       const legendStartX = MARGIN;
       const legendStartY = gridStartY + gridHeightPx + 40;
 
-      const legendItemsStartY = legendStartY;
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(t.bom, legendStartX, legendStartY);
+
+      const legendItemsStartY = legendStartY + 20;
 
       sortedBeads.forEach((item, index) => {
           const col = index % legendItemsPerRow;
@@ -300,45 +287,26 @@ const App: React.FC = () => {
           const x = legendStartX + col * (LEGEND_BOX_WIDTH + LEGEND_GAP);
           const y = legendItemsStartY + row * (LEGEND_BOX_HEIGHT + LEGEND_GAP);
 
-          // Draw color box (left square)
           ctx.fillStyle = item.bead.hex;
-          ctx.fillRect(x, y, SQUARE_SIZE, SQUARE_SIZE);
+          ctx.fillRect(x, y, LEGEND_BOX_WIDTH, LEGEND_BOX_HEIGHT);
           ctx.strokeStyle = '#333333';
           ctx.lineWidth = 1;
-          ctx.strokeRect(x, y, SQUARE_SIZE, SQUARE_SIZE);
-
-          // Draw count box (right square)
-          ctx.fillStyle = '#FAFAFA';
-          ctx.fillRect(x + SQUARE_SIZE, y, SQUARE_SIZE, SQUARE_SIZE);
-          ctx.strokeStyle = '#333333';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x + SQUARE_SIZE, y, SQUARE_SIZE, SQUARE_SIZE);
-
+          ctx.strokeRect(x, y, LEGEND_BOX_WIDTH, LEGEND_BOX_HEIGHT);
           const rgb = item.bead.rgb;
           const lum = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b);
-          const boxTextColor = lum > 128 ? '#000000' : '#FFFFFF';
+          const textColor = lum > 128 ? '#000000' : '#FFFFFF';
 
-          // Draw bead ID in left color box
-          ctx.fillStyle = boxTextColor;
-          ctx.font = 'bold 14px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(item.bead.id, x + SQUARE_SIZE/2, y + SQUARE_SIZE/2);
-
-          // Draw count in right box
-          ctx.fillStyle = '#000000';
+          ctx.fillStyle = textColor;
           ctx.font = 'bold 16px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(String(item.count), x + SQUARE_SIZE + SQUARE_SIZE/2, y + SQUARE_SIZE/2);
-      });
+          ctx.fillText(item.bead.id, x + LEGEND_BOX_WIDTH/2, y + LEGEND_BOX_HEIGHT/2);
 
-      // Draw brand name at bottom right
-      ctx.fillStyle = '#999999';
-      ctx.font = 'bold 24px sans-serif';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText('小霏狗拼豆', canvasWidth - MARGIN, canvasHeight - MARGIN);
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'top';
+          ctx.fillText(String(item.count), x + LEGEND_BOX_WIDTH - 4, y + 3);
+      });
 
       // Complete
       setGenerationStep('complete');
@@ -408,7 +376,7 @@ const App: React.FC = () => {
       <div className={bodyGridClass}>
         
         {/* Left Column: Sidebar Controls */}
-        <div className="overflow-y-auto h-full border-r-4 border-gray-600 custom-scrollbar">
+        <div className="overflow-hidden h-full border-r-4 border-gray-600">
           <Sidebar
             onImageUpload={handleImageUpload}
             width={targetWidth}
@@ -417,10 +385,7 @@ const App: React.FC = () => {
             setSelectedBead={setSelectedBead}
             toolMode={toolMode}
             setToolMode={setToolMode}
-            matchStrategy={matchStrategy}
-            setMatchStrategy={setMatchStrategy}
             onDenoise={handleDenoise}
-            onMirror={handleMirror}
             showGridLines={showGridLines}
             setShowGridLines={setShowGridLines}
             onExport={handleExport}
@@ -477,7 +442,7 @@ const App: React.FC = () => {
         </main>
 
         {/* Right Column: BOM/Inventory */}
-        <div className={`overflow-auto h-full border-l-4 border-gray-600 p-2 ${theme === 'dark' ? 'bg-[#212529]' : 'bg-gray-100'} custom-scrollbar`}>
+        <div className={`overflow-y-auto h-full border-l-4 border-gray-600 p-2 ${theme === 'dark' ? 'bg-[#212529]' : 'bg-gray-100'}`}>
            <BomTable
              grid={grid}
              selectedBead={selectedBead}
